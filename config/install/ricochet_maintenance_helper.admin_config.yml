@@ -1,0 +1,6 @@
+send: 1
+listen: 1
+target_address: 'http://live-ricochet-maintenance.pantheon.io/'
+key: ''
+status: 1
+interval: 0
