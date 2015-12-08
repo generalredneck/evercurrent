@@ -1,6 +1,6 @@
 send: 1
 listen: 1
-target_address: 'http://live-ricochet-maintenance.pantheon.io/'
+target_address: 'https://maintenance.projectricochet.com/'
 key: ''
 status: 1
 interval: 0
