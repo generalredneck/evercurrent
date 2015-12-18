@@ -86,6 +86,9 @@ class UpdateHelper implements UpdateHelperInterface {
     foreach ($data as $module => $module_info) {
       if (in_array($module_info['status'], $status_list)) {
         $sender_data['updates'][$module] = $data[$module];
+        // In some cases (like multisite installations),
+        // modules on certain paths are considered unimportant.
+        $sender_data['updates'][$module]['module_path'] = str_replace('/' . $module, '', drupal_get_path('module', $module));
       }
     }
 
