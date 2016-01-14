@@ -11,7 +11,7 @@ use Drupal\ricochet_maintenance_helper\UpdateHelper;
 /**
  * Default target environment
  */
-const RMH_ENV_URL = 'http://maintenance.projectricochet.com';
+const RMH_ENV_URL = 'https://maintenance.projectricochet.com';
 
 /**
  * Module's API version.
