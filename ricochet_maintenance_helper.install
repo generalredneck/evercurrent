@@ -20,7 +20,7 @@ function ricochet_maintenance_helper_requirements($phase) {
   $config = \Drupal::config('ricochet_maintenance_helper.admin_config');
   // Listening enabled?
   $listen = $config->get('listen');
-  $listen_on_text = t('The maintenance client is listening for a key to use.
+  $listen_on_text = t('The Ricochet Maintenance Helper module is listening for a key to use.
    You should finish configuration on the server side, or turn the listening feature off
    in the settings.');
   $requirements['ricochet_maintenance_helper_listen'] = [

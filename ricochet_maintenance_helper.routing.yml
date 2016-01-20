@@ -3,7 +3,7 @@ ricochet_maintenance_helper.admin_form:
   path: '/admin/config/ricochet_maintenance_helper'
   defaults:
     _form: '\Drupal\ricochet_maintenance_helper\Form\AdminForm'
-    _title: 'Ricochet Maintenance client'
+    _title: 'Ricochet Maintenance Helper'
   requirements:
     _permission: 'access ricochet maintenance helper settings'
 ricochet_maintenance_helper.listener:
