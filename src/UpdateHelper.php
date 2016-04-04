@@ -94,7 +94,15 @@ class UpdateHelper implements UpdateHelperInterface {
 
     // Send active module data, to allow us to act on uninstalled modules
     $moduleHandler = \Drupal::moduleHandler();
-    $sender_data['enabled'] = $moduleHandler->getModuleList();
+    $enabled_modules = $moduleHandler->getModuleList();
+    $sender_data['enabled'] = array();
+    foreach($enabled_modules AS $enabled_key => $enabled_module) {
+      $sender_data['enabled'][$enabled_key] = $enabled_key;
+    }
+    $enabled_themes = \Drupal::service('theme_handler')->listInfo();
+    foreach($enabled_themes AS $enabled_key => $enabled_theme) {
+      $sender_data['enabled'][$enabled_key] = $enabled_key;
+    }
 
     // Expose hook to add anything else.
     \Drupal::moduleHandler()->alter('ricochet_maintenance_helper_update_data', $sender_data);
