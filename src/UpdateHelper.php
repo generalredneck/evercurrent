@@ -12,6 +12,7 @@ use Drupal\Component\Utility\Xss;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Http;
 use Drupal\Core\Site\Settings;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 
 /**
  * Class UpdateHelper.
@@ -26,10 +27,16 @@ class UpdateHelper implements UpdateHelperInterface {
   protected $config_factory;
 
   /**
+   * @var $module_handler
+   */
+  protected $module_handler;
+
+  /**
    * Constructor.
    */
-  public function __construct(ConfigFactory $config_factory) {
+  public function __construct(ConfigFactory $config_factory, ModuleHandlerInterface $module_handler) {
     $this->config_factory = $config_factory;
+    $this->module_handler = $module_handler;
   }
 
 
@@ -92,8 +99,19 @@ class UpdateHelper implements UpdateHelperInterface {
       }
     }
 
+    // Send active module data, to allow us to act on uninstalled modules
+    $enabled_modules = $this->module_handler->getModuleList();
+    $sender_data['enabled'] = array();
+    foreach($enabled_modules AS $enabled_key => $enabled_module) {
+      $sender_data['enabled'][$enabled_key] = $enabled_key;
+    }
+    $enabled_themes = \Drupal::service('theme_handler')->listInfo();
+    foreach($enabled_themes AS $enabled_key => $enabled_theme) {
+      $sender_data['enabled'][$enabled_key] = $enabled_key;
+    }
+
     // Expose hook to add anything else.
-    \Drupal::moduleHandler()->alter('ricochet_maintenance_helper_update_data', $sender_data);
+    $this->module_handler->alter('ricochet_maintenance_helper_update_data', $sender_data);
 
     // Send the updates to the server.
     $path = $sender_data['send_url'] . RMH_URL;
