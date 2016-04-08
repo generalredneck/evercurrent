@@ -75,7 +75,7 @@ class UpdateHelper implements UpdateHelperInterface {
 
     $sender_data = [
       'send_url' => $config->get('target_address'),
-      'project_name' => $base_url,
+      'project_name' => $this->get_environment_url(),
       'key' => $key,
       'module_version' => $version['version'],
       'api_version' => 1,
@@ -257,5 +257,20 @@ class UpdateHelper implements UpdateHelperInterface {
     }
     return t('%last_time',
       ['%last_time' => $last_time]);
+  }
+
+  /**
+   * Helper function.
+   *
+   * Get an environment URL and ship together with the results.
+   * First we see if we have our own explicit variable set. This
+   * is only used for this purpose, and it allows the module
+   * to be flexible in terms of determining the correct environment.
+   *
+   */
+  public function get_environment_url() {
+    global $base_url;
+    $settings = Settings::get('ricochet_maintenance_helper_environment_url', NULL);
+    return $settings ? $settings : $base_url;
   }
 }
