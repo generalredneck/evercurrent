@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains Drupal\ricochet_maintenance_helper\UpdateHelper.
+ * Contains Drupal\evercurrent\UpdateHelper.
  */
 
-namespace Drupal\ricochet_maintenance_helper;
+namespace Drupal\evercurrent;
 
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Component\Utility\Xss;
@@ -17,7 +17,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 /**
  * Class UpdateHelper.
  *
- * @package Drupal\ricochet_maintenance_helper
+ * @package Drupal\evercurrent
  */
 class UpdateHelper implements UpdateHelperInterface {
 
@@ -55,7 +55,7 @@ class UpdateHelper implements UpdateHelperInterface {
    * @return mixed
    */
   public function sendUpdates($force = TRUE, $key = NULL, $out = FALSE) {
-    $config = \Drupal::config('ricochet_maintenance_helper.admin_config');
+    $config = \Drupal::config('evercurrent.admin_config');
     if (!$key) {
       $key = $this->getKeyFromSettings();
     }
@@ -71,7 +71,7 @@ class UpdateHelper implements UpdateHelperInterface {
     global $base_url;
 
     // Module version
-    $version = system_get_info('module', 'ricochet_maintenance_helper');
+    $version = system_get_info('module', 'evercurrent');
 
     $sender_data = [
       'send_url' => $config->get('target_address'),
@@ -111,7 +111,7 @@ class UpdateHelper implements UpdateHelperInterface {
     }
 
     // Expose hook to add anything else.
-    $this->module_handler->alter('ricochet_maintenance_helper_update_data', $sender_data);
+    $this->module_handler->alter('evercurrent_update_data', $sender_data);
 
     // Send the updates to the server.
     $path = $sender_data['send_url'] . RMH_URL;
@@ -143,7 +143,7 @@ class UpdateHelper implements UpdateHelperInterface {
           return FALSE;
         }
         else {
-          \Drupal::state()->set('ricochet_maintenance_helper_last_run',time());
+          \Drupal::state()->set('evercurrent_last_run',time());
           $this->writeStatus(RMH_STATUS_OK, $response_data['message'], $out);
           // If successful, we want to reassure that listening mode is off.
           $this->disableListening();
@@ -166,12 +166,12 @@ class UpdateHelper implements UpdateHelperInterface {
    * Retrieve a key from settings.php, or from variable.
    */
   public function getKeyFromSettings() {
-    $config = \Drupal::config('ricochet_maintenance_helper.admin_config');
+    $config = \Drupal::config('evercurrent.admin_config');
     $override = $config->get('override');
     // Key from regular configuration
     $config_key = $config->get('key');
     // Key from settings.php
-    $settings_key = Settings::get('ricochet_maintenance_helper_environment_token', NULL);
+    $settings_key = Settings::get('evercurrent_environment_token', NULL);
     // If
     return ($settings_key && !$override) ? $settings_key : $config_key;
   }
@@ -180,7 +180,7 @@ class UpdateHelper implements UpdateHelperInterface {
    * Disable listening mode.
    */
   public function disableListening() {
-    $config = $this->config_factory->getEditable('ricochet_maintenance_helper.admin_config');
+    $config = $this->config_factory->getEditable('evercurrent.admin_config');
     $config->set('listen', FALSE);
     $config->save();
   }
@@ -193,16 +193,16 @@ class UpdateHelper implements UpdateHelperInterface {
    * @param $output
    */
   public function writeStatus($severity, $message, $output = FALSE) {
-    $config = $this->config_factory->getEditable('ricochet_maintenance_helper.admin_config');
+    $config = $this->config_factory->getEditable('evercurrent.admin_config');
     $message = Xss::filter($message);
     $state = \Drupal::state();
-    $state->set('ricochet_maintenance_helper_status_message', $message);
-    $state->set('ricochet_maintenance_helper_status', $severity);
+    $state->set('evercurrent_status_message', $message);
+    $state->set('evercurrent_status', $severity);
     $config->save();
 
     // If error, also log to watchdog.
     if ($severity == RMH_STATUS_ERROR) {
-      \Drupal::logger('ricochet_maintenance_helper')->error($message);
+      \Drupal::logger('evercurrent')->error($message);
     }
     // Output this to message.
     if ($output) {
@@ -218,7 +218,7 @@ class UpdateHelper implements UpdateHelperInterface {
    * @return bool
    */
   public function setKey($key) {
-    $config = $this->config_factory->getEditable('ricochet_maintenance_helper.admin_config');
+    $config = $this->config_factory->getEditable('evercurrent.admin_config');
     if ($this->keyCheck($key)) {
       $config->set('key', $key);
       return TRUE;
@@ -238,7 +238,7 @@ class UpdateHelper implements UpdateHelperInterface {
       $this->writeStatus(RMH_STATUS_ERROR, 'Failed to set RMH key. Key should be a 32-character string.');
       return FALSE;
     }
-    $config = $this->config_factory->getEditable('ricochet_maintenance_helper.admin_config');
+    $config = $this->config_factory->getEditable('evercurrent.admin_config');
     $config->set('listen', FALSE);
     $config->set('key', $key);
     $this->writeStatus(RMH_STATUS_OK, 'Key was successfully received.');
@@ -252,7 +252,7 @@ class UpdateHelper implements UpdateHelperInterface {
    * @return string
    */
   function lastRun() {
-    $last = \Drupal::state()->get('ricochet_maintenance_helper_last_run') ?: 0;
+    $last = \Drupal::state()->get('evercurrent_last_run') ?: 0;
     if ($last > 0) {
       $last_time = \Drupal::service('date.formatter')->formatInterval(time() - $last);
     }
@@ -274,7 +274,7 @@ class UpdateHelper implements UpdateHelperInterface {
    */
   public function get_environment_url() {
     global $base_url;
-    $settings = Settings::get('ricochet_maintenance_helper_environment_url', NULL);
+    $settings = Settings::get('evercurrent_environment_url', NULL);
     return $settings ? $settings : $base_url;
   }
 }
