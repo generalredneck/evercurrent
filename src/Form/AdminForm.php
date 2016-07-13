@@ -2,20 +2,20 @@
 
 /**
  * @file
- * Contains Drupal\ricochet_maintenance_helper\Form\AdminForm.
+ * Contains Drupal\evercurrent\Form\AdminForm.
  */
 
-namespace Drupal\ricochet_maintenance_helper\Form;
+namespace Drupal\evercurrent\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\ricochet_maintenance_helper\UpdateHelper;
+use Drupal\evercurrent\UpdateHelper;
 use Drupal\Core\Site\Settings;
 
 /**
  * Class AdminForm.
  *
- * @package Drupal\ricochet_maintenance_helper\Form
+ * @package Drupal\evercurrent\Form
  */
 class AdminForm extends ConfigFormBase {
 
@@ -24,7 +24,7 @@ class AdminForm extends ConfigFormBase {
    */
   protected function getEditableConfigNames() {
     return [
-      'ricochet_maintenance_helper.admin_config'
+      'evercurrent.admin_config'
     ];
   }
 
@@ -39,7 +39,7 @@ class AdminForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->config('ricochet_maintenance_helper.admin_config');
+    $config = $this->config('evercurrent.admin_config');
     $form['send'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Enable sending update reports'),
@@ -62,7 +62,7 @@ class AdminForm extends ConfigFormBase {
       '#description' => $this->t('The API key for this site. It should contain only lower case letters and numbers.
 If you have development and staging environments,
 you should not store the API key in this field, but in your production environment\'s settings.php as follows:
-<i>$settings["ricochet_maintenance_helper_environment_token"] = "myapikey";</i>
+<i>$settings["evercurrent_environment_token"] = "myapikey";</i>
 This is important if you are using different environments. See this module\'s documentation for more information.'),
       '#maxlength' => 32,
       '#size' => 32,
@@ -93,7 +93,7 @@ This is important if you are using different environments. See this module\'s do
         60 * 60 * 24 => t('Every 24 hours'),
       ],
     ];
-    $settings_token = Settings::get('ricochet_maintenance_helper_environment_token', NULL);
+    $settings_token = Settings::get('evercurrent_environment_token', NULL);
     if ($settings_token){
       $form['override'] = array(
         '#type' => 'checkbox',
@@ -134,7 +134,7 @@ If you want to override that key, check this box. The API key in the 'API key' f
   public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);
 
-    $this->config('ricochet_maintenance_helper.admin_config')
+    $this->config('evercurrent.admin_config')
       ->set('send', $form_state->getValue('send'))
       ->set('listen', $form_state->getValue('listen'))
       ->set('target_address', $form_state->getValue('target_address'))
@@ -145,7 +145,7 @@ If you want to override that key, check this box. The API key in the 'API key' f
 
     if ( $form_state->getValue('send_now') == TRUE){
       drupal_set_message('Attempting to contact server..');
-      $updateHelper = \Drupal::service('ricochet_maintenance_helper.update_helper');
+      $updateHelper = \Drupal::service('evercurrent.update_helper');
       $result = $updateHelper->sendUpdates(TRUE, NULL, TRUE);
     }
   }

@@ -1,14 +1,14 @@
 {
-  "name": "drupal/ricochet_maintenance_helper",
+  "name": "drupal/evercurrent",
   "type": "drupal-module",
-  "description": "Allows for sending updates to the Ricochet Maintenance server",
+  "description": "Allows for sending updates to the Evercurrent server",
   "keywords": ["Drupal"],
   "license": "GPL-2.0+",
-  "homepage": "http://drupal.org/project/ricochet_maintenance_helper",
+  "homepage": "http://drupal.org/project/evercurrent",
   "minimum-stability": "dev",
   "support": {
-    "issues": "http://drupal.org/project/issues/ricochet_maintenance_helper",
-    "source": "http://cgit.drupalcode.org/ricochet_maintenance_helper"
+    "issues": "http://drupal.org/project/issues/evercurrent",
+    "source": "http://cgit.drupalcode.org/evercurrent"
   },
   "require": {}
 }

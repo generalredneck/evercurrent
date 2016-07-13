@@ -2,15 +2,15 @@
 
 /**
  * @file
- * Contains Drupal\ricochet_maintenance_helper\UpdateHelperInterface.
+ * Contains Drupal\evercurrent\UpdateHelperInterface.
  */
 
-namespace Drupal\ricochet_maintenance_helper;
+namespace Drupal\evercurrent;
 
 /**
  * Interface UpdateHelperInterface.
  *
- * @package Drupal\ricochet_maintenance_helper
+ * @package Drupal\evercurrent
  */
 interface UpdateHelperInterface {
 

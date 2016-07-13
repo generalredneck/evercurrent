@@ -4,7 +4,7 @@
  * Contains \Drupal\example\Controller\ExamleController.
  */
 
-namespace Drupal\ricochet_maintenance_helper\Controller;
+namespace Drupal\evercurrent\Controller;
 
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,14 +25,14 @@ class ListenerPageController {
    * @return \Drupal\Core\Access\AccessResult
    */
   public function access(AccountInterface $account) {
-    $config = \Drupal::config('ricochet_maintenance_helper.admin_config');
+    $config = \Drupal::config('evercurrent.admin_config');
     $listen = $config->get('listen');
     return ($listen) ? AccessResult::allowed() : AccessResult::forbidden();
   }
 
   public function content() {
     $received = json_decode($_POST['data'], TRUE);
-    $updateHelper = \Drupal::service('ricochet_maintenance_helper.update_helper');
+    $updateHelper = \Drupal::service('evercurrent.update_helper');
     // No key equals error response.
     if (!isset($received['key'])) {
       $severity = RMH_STATUS_ERROR;
