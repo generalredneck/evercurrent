@@ -5,13 +5,12 @@
  * Contains evercurrent.module.
  */
 
-use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\evercurrent\UpdateHelper;
 
 /**
  * Default target environment
  */
-const RMH_ENV_URL = 'https://maintenance.projectricochet.com';
+const RMH_ENV_URL = 'https://app.evercurrent.io';
 
 /**
  * Module's API version.
