@@ -10,6 +10,7 @@ namespace Drupal\evercurrent;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Component\Utility\Xss;
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Extension\ThemeHandlerInterface;
 use Drupal\Core\Http;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -32,11 +33,17 @@ class UpdateHelper implements UpdateHelperInterface {
   protected $module_handler;
 
   /**
+   * @var ThemeHandlerInterface
+   */
+  protected $theme_handler;
+
+  /**
    * Constructor.
    */
-  public function __construct(ConfigFactory $config_factory, ModuleHandlerInterface $module_handler) {
+  public function __construct(ConfigFactory $config_factory, ModuleHandlerInterface $module_handler, ThemeHandlerInterface $theme_handler) {
     $this->config_factory = $config_factory;
     $this->module_handler = $module_handler;
+    $this->theme_handler = $theme_handler;
   }
 
 
@@ -64,11 +71,11 @@ class UpdateHelper implements UpdateHelperInterface {
       $this->writeStatus(RMH_STATUS_WARNING, 'RMH Update check not run. The key is not a vaild key. It should be a 32-digit string with only letters and numbers.', $out);
       return FALSE;
     }
+    $data = array();
     if ($available = update_get_available(TRUE)) {
       module_load_include('inc', 'update', 'update.compare');
       $data = update_calculate_project_data($available);
     }
-    global $base_url;
 
     // Module version
     $version = system_get_info('module', 'evercurrent');
@@ -87,7 +94,7 @@ class UpdateHelper implements UpdateHelperInterface {
       UPDATE_NOT_SUPPORTED,
       UPDATE_CURRENT,
       UPDATE_NOT_CHECKED,
-      UPDATE_NOT_CURRENT
+      UPDATE_NOT_CURRENT,
     ];
 
     foreach ($data as $module => $module_info) {
@@ -105,9 +112,17 @@ class UpdateHelper implements UpdateHelperInterface {
     foreach($enabled_modules AS $enabled_key => $enabled_module) {
       $sender_data['enabled'][$enabled_key] = $enabled_key;
     }
-    $enabled_themes = \Drupal::service('theme_handler')->listInfo();
+    $enabled_themes = $this->theme_handler->listInfo();
     foreach($enabled_themes AS $enabled_key => $enabled_theme) {
       $sender_data['enabled'][$enabled_key] = $enabled_key;
+    }
+    // Retrieve active installation profile data.
+    // We mark this as enabled send this if we are using an installation profile
+    // that the Update Manager module also reports on. Otherwise, Evercurrent
+    // will not tell us about updates for it.
+    $install_profile = Settings::get('install_profile');
+    if ($install_profile && in_array($install_profile, array_keys($sender_data['updates']))) {
+      $sender_data['enabled'][$install_profile] = $install_profile;
     }
 
     // Expose hook to add anything else.
@@ -121,7 +136,7 @@ class UpdateHelper implements UpdateHelperInterface {
     try {
       $response = \Drupal::httpClient()
         ->request('POST', $path, [
-          'form_params' => array('data' => json_encode($sender_data))
+          'form_params' => array('data' => json_encode($sender_data)),
         ]);
     } catch (\Exception $e) {
       $this->writeStatus(RMH_STATUS_ERROR, 'When trying to reach the server URL, Drupal reported the followng connection error: ' . $e->getMessage(), $out);
