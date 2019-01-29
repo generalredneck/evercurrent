@@ -136,7 +136,10 @@ class UpdateHelper implements UpdateHelperInterface {
     try {
       $response = \Drupal::httpClient()
         ->request('POST', $path, [
-          'form_params' => array('data' => json_encode($sender_data)),
+          'body' => json_encode($sender_data),
+          'headers' => [
+            'Content-Type' => 'application/json',
+          ]
         ]);
     } catch (\Exception $e) {
       $this->writeStatus(RMH_STATUS_ERROR, 'When trying to reach the server URL, Drupal reported the followng connection error: ' . $e->getMessage(), $out);
