@@ -14,6 +14,8 @@ use Drupal\Core\Extension\ThemeHandlerInterface;
 use Drupal\Core\Http;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\update\UpdateManagerInterface;
+use Drupal\update\UpdateFetcherInterface;
 
 /**
  * Class UpdateHelper.
@@ -89,12 +91,12 @@ class UpdateHelper implements UpdateHelperInterface {
       'updates' => [],
     ];
     $status_list = [
-      UPDATE_NOT_SECURE,
-      UPDATE_REVOKED,
-      UPDATE_NOT_SUPPORTED,
-      UPDATE_CURRENT,
-      UPDATE_NOT_CHECKED,
-      UPDATE_NOT_CURRENT,
+      UpdateManagerInterface::NOT_SECURE,
+      UpdateManagerInterface::REVOKED,
+      UpdateManagerInterface::NOT_SUPPORTED,
+      UpdateManagerInterface::CURRENT,
+      UpdateFetcherInterface::NOT_CHECKED,
+      UpdateManagerInterface::NOT_CURRENT,
     ];
 
     foreach ($data as $module => $module_info) {
