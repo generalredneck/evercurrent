@@ -1,3 +1,4 @@
+core_version_requirement: ^8 || ^9
 name: Evercurrent
 type: module
 description: Allows for sending data about required updates to the Evercurrent server

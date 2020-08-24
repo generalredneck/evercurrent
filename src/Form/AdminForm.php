@@ -1,16 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\evercurrent\Form\AdminForm.
- */
-
 namespace Drupal\evercurrent\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\evercurrent\UpdateHelper;
 use Drupal\Core\Site\Settings;
+use Drupal\Core\Messenger\MessengerInterface;
 
 /**
  * Class AdminForm.
@@ -20,11 +15,28 @@ use Drupal\Core\Site\Settings;
 class AdminForm extends ConfigFormBase {
 
   /**
+   * The Messenger service.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
+   * MyModuleService constructor.
+   *
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger service.
+   */
+  public function __construct(MessengerInterface $messenger) {
+    $this->messenger = $messenger;
+  }
+
+  /**
    * {@inheritdoc}
    */
   protected function getEditableConfigNames() {
     return [
-      'evercurrent.admin_config'
+      'evercurrent.admin_config',
     ];
   }
 
@@ -45,7 +57,7 @@ class AdminForm extends ConfigFormBase {
       '#title' => $this->t('Enable sending update reports'),
       '#description' => $this->t('Check this to enable sending information about available updates to the Ricochet Maintenance server.'),
       '#default_value' => $config->get('send'),
-      '#weight' => 1
+      '#weight' => 1,
     ];
     $form['target_address'] = [
       '#type' => 'textfield',
@@ -54,7 +66,7 @@ class AdminForm extends ConfigFormBase {
       '#maxlength' => 300,
       '#size' => 40,
       '#default_value' => $config->get('target_address'),
-      '#weight' => 2
+      '#weight' => 2,
     ];
     $form['key'] = [
       '#type' => 'textfield',
@@ -67,13 +79,13 @@ This is important if you are using different environments. See this module\'s do
       '#maxlength' => 32,
       '#size' => 32,
       '#default_value' => $config->get('key'),
-      '#weight' => 4
+      '#weight' => 4,
     ];
     $form['details'] = [
       '#type' => 'details',
       '#title' => $this->t('Advanced'),
       '#open' => FALSE,
-      '#weight' => 5
+      '#weight' => 5,
     ];
     $form['details']['listen'] = [
       '#type' => 'checkbox',
@@ -83,49 +95,42 @@ This is important if you are using different environments. See this module\'s do
     ];
     $form['details']['interval'] = [
       '#type' => 'select',
-      '#title' => t('Report frequency'),
-      '#description' => t('The frequency for sending updates to the server. Use this if your cron runs very often.'),
+      '#title' => $this->t('Report frequency'),
+      '#description' => $this->t('The frequency for sending updates to the server. Use this if your cron runs very often.'),
       '#default_value' => $config->get('interval'),
       '#options' => [
-        0 => t('Every time Cron runs'),
-        3600 => t('Every hour'),
-        3600 * 12 => t('Every 12 hours'),
-        60 * 60 * 24 => t('Every 24 hours'),
+        0 => $this->t('Every time Cron runs'),
+        3600 => $this->t('Every hour'),
+        3600 * 12 => $this->t('Every 12 hours'),
+        60 * 60 * 24 => $this->t('Every 24 hours'),
       ],
     ];
     $settings_token = Settings::get('evercurrent_environment_token', NULL);
-    if ($settings_token){
-      $form['override'] = array(
+    if ($settings_token) {
+      $form['override'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Override API key stored in settings.php'),
         '#description' => $this->t(
           "An API key '<b>%key</b>' has been detected in your site's settings.php file.
 If you want to override that key, check this box. The API key in the 'API key' field below will then be used instead.",
-          array('%key' => $settings_token)
+          ['%key' => $settings_token]
         ),
-        '#default_value' =>$config->get('override'),
-        '#weight' => 3
-      );
-      $form['key']['#states'] = array(
-        'disabled' => array(
-          ':input[name="override"]' => array('checked' => FALSE),
-        )
-      );
+        '#default_value' => $config->get('override'),
+        '#weight' => 3,
+      ];
+      $form['key']['#states'] = [
+        'disabled' => [
+          ':input[name="override"]' => ['checked' => FALSE],
+        ],
+      ];
     }
-    $form['send_now'] = array(
+    $form['send_now'] = [
       '#type' => 'checkbox',
-      '#title' => t('Send update report when saving configuration'),
-      '#description' => t('Check this to attempt sending updates to the server immediately after you have saved this form.'),
-      '#weight' => 10
-    );
+      '#title' => $this->t('Send update report when saving configuration'),
+      '#description' => $this->t('Check this to attempt sending updates to the server immediately after you have saved this form.'),
+      '#weight' => 10,
+    ];
     return parent::buildForm($form, $form_state);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    parent::validateForm($form, $form_state);
   }
 
   /**
@@ -143,10 +148,11 @@ If you want to override that key, check this box. The API key in the 'API key' f
       ->set('override', $form_state->getValue('override'))
       ->save();
 
-    if ( $form_state->getValue('send_now') == TRUE){
-      drupal_set_message('Attempting to contact server..');
+    if ($form_state->getValue('send_now') == TRUE) {
+      $this->messenger->addMessage('Attempting to contact server..');
       $updateHelper = \Drupal::service('evercurrent.update_helper');
       $result = $updateHelper->sendUpdates(TRUE, NULL, TRUE);
     }
   }
+
 }

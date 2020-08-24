@@ -1,21 +1,16 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\evercurrent\UpdateHelper.
- */
-
 namespace Drupal\evercurrent;
 
-use Drupal\Core\Config\ConfigFactory;
-use Drupal\Component\Utility\Xss;
 use Drupal\Component\Serialization\Json;
-use Drupal\Core\Extension\ThemeHandlerInterface;
-use Drupal\Core\Http;
-use Drupal\Core\Site\Settings;
+use Drupal\Component\Utility\Xss;
+use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\update\UpdateManagerInterface;
+use Drupal\Core\Extension\ThemeHandlerInterface;
+use Drupal\Core\Site\Settings;
 use Drupal\update\UpdateFetcherInterface;
+use Drupal\update\UpdateManagerInterface;
 
 /**
  * Class UpdateHelper.
@@ -25,43 +20,63 @@ use Drupal\update\UpdateFetcherInterface;
 class UpdateHelper implements UpdateHelperInterface {
 
   /**
-   * @var ConfigFactory
+   * The config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactory
    */
-  protected $config_factory;
+  protected $configFactory;
 
   /**
-   * @var $module_handler
+   * The module handler interface.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
-  protected $module_handler;
+  protected $moduleHandler;
 
   /**
-   * @var ThemeHandlerInterface
+   * The theme handler interface.
+   *
+   * @var \Drupal\Core\Extension\ThemeHandlerInterface
    */
-  protected $theme_handler;
+  protected $themeHandler;
+
+  /**
+   * The module extension list.
+   *
+   * @var \Drupal\Core\Extension\ModuleExtensionList
+   */
+  protected $moduleExtensionList;
+
+  /**
+   * The messenger service.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
 
   /**
    * Constructor.
    */
-  public function __construct(ConfigFactory $config_factory, ModuleHandlerInterface $module_handler, ThemeHandlerInterface $theme_handler) {
-    $this->config_factory = $config_factory;
-    $this->module_handler = $module_handler;
-    $this->theme_handler = $theme_handler;
+  public function __construct(ConfigFactory $configFactory, ModuleHandlerInterface $moduleHandler, ThemeHandlerInterface $themeHandler, ModuleExtensionList $moduleExtensionList, MessengerInterface $messenger) {
+    $this->configFactory = $configFactory;
+    $this->moduleHandler = $moduleHandler;
+    $this->themeHandler = $themeHandler;
+    $this->moduleExtensionList = $moduleExtensionList;
+    $this->messenger = $messenger;
   }
-
 
   /**
    * Send updates to the Maintenance server.
    *
-   * @param $force
-   * Force Drupal's update collector to refresh available updates.
-   *
-   * @param $key
-   * Use another key than what is saved
-   *
-   * @param $out
-   * Display error messages as screen messages
+   * @param bool $force
+   *   Force Drupal's update collector to refresh available updates.
+   * @param int $key
+   *   Use another key than what is saved.
+   * @param bool $out
+   *   Display error messages as screen messages.
    *
    * @return mixed
+   *   Returns mixed type of data.
    */
   public function sendUpdates($force = TRUE, $key = NULL, $out = FALSE) {
     $config = \Drupal::config('evercurrent.admin_config');
@@ -73,14 +88,14 @@ class UpdateHelper implements UpdateHelperInterface {
       $this->writeStatus(RMH_STATUS_WARNING, 'RMH Update check not run. The key is not a vaild key. It should be a 32-digit string with only letters and numbers.', $out);
       return FALSE;
     }
-    $data = array();
+    $data = [];
     if ($available = update_get_available(TRUE)) {
       module_load_include('inc', 'update', 'update.compare');
       $data = update_calculate_project_data($available);
     }
 
-    // Module version
-    $version = system_get_info('module', 'evercurrent');
+    // Module version.
+    $version = $this->moduleExtensionList->getExtensionInfo('evercurrent');
 
     $sender_data = [
       'send_url' => $config->get('target_address'),
@@ -108,14 +123,14 @@ class UpdateHelper implements UpdateHelperInterface {
       }
     }
 
-    // Send active module data, to allow us to act on uninstalled modules
+    // Send active module data, to allow us to act on uninstalled modules.
     $enabled_modules = $this->module_handler->getModuleList();
-    $sender_data['enabled'] = array();
-    foreach($enabled_modules AS $enabled_key => $enabled_module) {
+    $sender_data['enabled'] = [];
+    foreach ($enabled_modules as $enabled_key => $enabled_module) {
       $sender_data['enabled'][$enabled_key] = $enabled_key;
     }
     $enabled_themes = $this->theme_handler->listInfo();
-    foreach($enabled_themes AS $enabled_key => $enabled_theme) {
+    foreach ($enabled_themes as $enabled_key => $enabled_theme) {
       $sender_data['enabled'][$enabled_key] = $enabled_key;
     }
     // Retrieve active installation profile data.
@@ -133,7 +148,7 @@ class UpdateHelper implements UpdateHelperInterface {
     // Send the updates to the server.
     $path = $sender_data['send_url'] . RMH_URL;
 
-    // Set up a request
+    // Set up a request.
     /** @var \Drupal::httpClient $client */
     try {
       $response = \Drupal::httpClient()
@@ -141,9 +156,10 @@ class UpdateHelper implements UpdateHelperInterface {
           'body' => json_encode($sender_data),
           'headers' => [
             'Content-Type' => 'application/json',
-          ]
+          ],
         ]);
-    } catch (\Exception $e) {
+    }
+    catch (\Exception $e) {
       $this->writeStatus(RMH_STATUS_ERROR, 'When trying to reach the server URL, Drupal reported the followng connection error: ' . $e->getMessage(), $out);
       return FALSE;
     }
@@ -163,7 +179,7 @@ class UpdateHelper implements UpdateHelperInterface {
           return FALSE;
         }
         else {
-          \Drupal::state()->set('evercurrent_last_run',time());
+          \Drupal::state()->set('evercurrent_last_run', time());
           $this->writeStatus(RMH_STATUS_OK, $response_data['message'], $out);
           // If successful, we want to reassure that listening mode is off.
           $this->disableListening();
@@ -175,8 +191,13 @@ class UpdateHelper implements UpdateHelperInterface {
   }
 
   /**
-   * @param $key
+   * Checks the key parameter.
+   *
+   * @param string $key
+   *   Parameter of string data type.
+   *
    * @return bool
+   *   Returns either true or false.
    */
   public function keyCheck($key) {
     return is_string($key) && preg_match(RMH_MD5_MATCH, $key);
@@ -188,11 +209,11 @@ class UpdateHelper implements UpdateHelperInterface {
   public function getKeyFromSettings() {
     $config = \Drupal::config('evercurrent.admin_config');
     $override = $config->get('override');
-    // Key from regular configuration
+    // Key from regular configuration.
     $config_key = $config->get('key');
-    // Key from settings.php
+    // Key from settings.php.
     $settings_key = Settings::get('evercurrent_environment_token', NULL);
-    // If
+    // If.
     return ($settings_key && !$override) ? $settings_key : $config_key;
   }
 
@@ -208,9 +229,12 @@ class UpdateHelper implements UpdateHelperInterface {
   /**
    * Saves a status message for the status page.
    *
-   * @param $severity
-   * @param $message
-   * @param $output
+   * @param string $severity
+   *   Displays the severity in the status.
+   * @param string $message
+   *   Displays a message.
+   * @param bool $output
+   *   Display error messages as screen messages.
    */
   public function writeStatus($severity, $message, $output = FALSE) {
     $config = $this->config_factory->getEditable('evercurrent.admin_config');
@@ -227,15 +251,18 @@ class UpdateHelper implements UpdateHelperInterface {
     // Output this to message.
     if ($output) {
       $alert_type = ($severity == RMH_STATUS_OK) ? 'status' : 'error';
-      drupal_set_message($message, $alert_type);
+      $this->messenger->addMessage($message, $alert_type);
     }
   }
 
   /**
    * Check a key and set it if valid.
    *
-   * @param $key
+   * @param bool $key
+   *   Parameter key of boolean type.
+   *
    * @return bool
+   *   Returns a boolean result.
    */
   public function setKey($key) {
     $config = $this->config_factory->getEditable('evercurrent.admin_config');
@@ -250,8 +277,11 @@ class UpdateHelper implements UpdateHelperInterface {
   /**
    * Test sending an update to the server.
    *
-   * @param $key
+   * @param bool $key
+   *   Parameter key of boolean type.
+   *
    * @return bool
+   *   Returns a boolean result.
    */
   public function testUpdate($key) {
     if (!$this->keyCheck($key)) {
@@ -270,16 +300,17 @@ class UpdateHelper implements UpdateHelperInterface {
    * Get interval since last try.
    *
    * @return string
+   *   Returns a string.
    */
-  function lastRun() {
+  public function lastRun() {
     $last = \Drupal::state()->get('evercurrent_last_run') ?: 0;
     if ($last > 0) {
       $last_time = \Drupal::service('date.formatter')->formatInterval(time() - $last);
     }
     else {
-      $last_time = t('Never.');
+      $last_time = $this->t('Never.');
     }
-    return t('%last_time',
+    return $this->t('%last_time',
       ['%last_time' => $last_time]);
   }
 
@@ -290,11 +321,11 @@ class UpdateHelper implements UpdateHelperInterface {
    * First we see if we have our own explicit variable set. This
    * is only used for this purpose, and it allows the module
    * to be flexible in terms of determining the correct environment.
-   *
    */
-  public function get_environment_url() {
+  public function getEnvironmentUrl() {
     global $base_url;
-    $settings = Settings::get('evercurrent_environment_url', NULL);
+    $settings = Settings::get('getEnvironmentUrl', NULL);
     return $settings ? $settings : $base_url;
   }
+
 }
